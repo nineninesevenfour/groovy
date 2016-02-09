@@ -61,9 +61,8 @@ public class StackTraceUtils {
             System.getProperty("groovy.sanitized.stacktraces",
                     "groovy.," +
                             "org.codehaus.groovy.," +
-                            "java.," +
-                            "javax.," +
-                            "sun.," +
+                            "java.lang.reflect," +
+                            "sun.reflect," +
                             "gjdk.groovy.,"
             ).split("(\\s|,)+");
 
