@@ -26,6 +26,8 @@ install:
 matrix:
   include:
     - env: BC='indy'
+      jdk: openjdk16
+    - env: BC='indy'
       jdk: openjdk15
     - env: BC='indy'
       jdk: openjdk14
