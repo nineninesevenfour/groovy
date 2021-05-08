@@ -22,11 +22,16 @@ import org.codehaus.groovy.vmplugin.VMPluginFactory
 
 def handler = false
 def jdk9plus = VMPluginFactory.getPlugin().getVersion() > 8
+def macOsRuntimeForJavaPresent = classExists('com.apple.mrj.MRJApplicationUtils')
+        && classExists('com.apple.mrj.MRJQuitHandler')
+        && classExists('com.apple.mrj.MRJAboutHandler')
+        && classExists('com.apple.mrj.MRJPrefsHandler')
 // TODO Desktop handlers are supposed to work cross platform, should we do version check at a higher layer
 // TODO there is also an open files handler, should we also be using that?
 if (!handler) {
     try {
-        handler = build(jdk9plus ? """
+        if (jdk9plus || macOsRuntimeForJavaPresent) {
+            handler = build(jdk9plus ? """
 import java.awt.Desktop
 def handler = Desktop.getDesktop()
 handler.setAboutHandler(controller.&showAbout)
@@ -65,6 +70,10 @@ MRJApplicationUtils.registerPrefsHandler(handler)
 
 return handler
 """, new GroovyClassLoader(this.class.classLoader))
+        } else {
+            build(BasicMenuBar)
+            return
+        }
     } catch (Exception se) {
         // usually an AccessControlException, sometimes applets and JNLP won't let
         // you access MRJ classes.
@@ -150,5 +159,14 @@ menuBar {
         menuItem(inspectAstAction, icon:null)
         menuItem(inspectCstAction, icon:null)
         menuItem(inspectTokensAction, icon:null)
+    }
+}
+
+def classExists(String className) {
+    try {
+       Class.forName(className)
+        true
+    } catch (ClassNotFoundException cnfe) {
+        false
     }
 }

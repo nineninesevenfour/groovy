@@ -489,8 +489,10 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
 
     void installInterceptor() {
         systemOutInterceptor = new SystemOutputInterceptor(this.&notifySystemOut, true)
+//        systemOutInterceptor.consoleId = this.consoleId
         systemOutInterceptor.start()
         systemErrorInterceptor = new SystemOutputInterceptor(this.&notifySystemErr, false)
+//        systemErrorInterceptor.consoleId = this.consoleId
         systemErrorInterceptor.start()
     }
 
@@ -545,6 +547,9 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
     }
 
     void appendStacktrace(text) {
+        if (outputArea == null) {
+            return
+        }
         def doc = outputArea.styledDocument
 
         // split lines by new line separator
@@ -1354,6 +1359,7 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
         runThread = Thread.start {
             try {
                 systemOutInterceptor.setConsoleId(this.getConsoleId())
+//                systemErrorInterceptor.setConsoleId(this.getConsoleId())
                 SwingUtilities.invokeLater { showExecutingMessage() }
                 if (beforeExecution) {
                     beforeExecution()
