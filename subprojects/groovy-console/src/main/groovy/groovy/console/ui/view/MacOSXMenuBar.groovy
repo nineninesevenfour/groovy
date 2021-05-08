@@ -20,25 +20,58 @@ package groovy.console.ui.view
 
 import org.codehaus.groovy.vmplugin.VMPluginFactory
 
-def handler = false
-def jdk9plus = VMPluginFactory.getPlugin().getVersion() > 8
-def macOsRuntimeForJavaPresent = classExists('com.apple.mrj.MRJApplicationUtils')
-        && classExists('com.apple.mrj.MRJQuitHandler')
-        && classExists('com.apple.mrj.MRJAboutHandler')
-        && classExists('com.apple.mrj.MRJPrefsHandler')
-// TODO Desktop handlers are supposed to work cross platform, should we do version check at a higher layer
-// TODO there is also an open files handler, should we also be using that?
-if (!handler) {
-    try {
-        if (jdk9plus || macOsRuntimeForJavaPresent) {
-            handler = build(jdk9plus ? """
+final String JDK9PLUS_SCRIPT = """
 import java.awt.Desktop
 def handler = Desktop.getDesktop()
 handler.setAboutHandler(controller.&showAbout)
 handler.setQuitHandler(controller.&exitDesktop)
 handler.setPreferencesHandler(controller.&preferences)
 handler
-""" : """
+"""
+
+final String EAWT_SCRIPT = """
+package groovy.console.ui
+
+import com.apple.eawt.*
+import com.apple.eawt.AppEvent.*
+
+class ConsoleMacOsSupport implements QuitHandler, AboutHandler, PreferencesHandler {
+
+    def quitHandler
+    def aboutHandler
+    def prefHandler
+
+    @Override
+    public void handleAbout(AboutEvent ev) {
+        aboutHandler()
+    }
+
+    @Override
+    public void handleQuitRequestWith(QuitEvent ev, QuitResponse resp) {
+        // Console.exit() returns false, if the user chose to stay around
+        if (quitHandler()) {
+            resp.performQuit()
+        } else {
+            resp.cancelQuit()
+        }
+    }
+
+    @Override
+    public void handlePreferences(PreferencesEvent ev) {
+        prefHandler()
+    }
+}
+
+def handler = new ConsoleMacOsSupport(quitHandler:controller.&exit, aboutHandler:controller.&showAbout, prefHandler:controller.&preferences)
+def application = Application.getApplication()
+application.setQuitHandler(handler)
+application.setAboutHandler(handler)
+application.setPreferencesHandler(handler)
+
+return handler
+"""
+
+final String MRJ_SCRIPT = """
 package groovy.console.ui
 
 import com.apple.mrj.*
@@ -69,7 +102,28 @@ MRJApplicationUtils.registerQuitHandler(handler)
 MRJApplicationUtils.registerPrefsHandler(handler)
 
 return handler
-""", new GroovyClassLoader(this.class.classLoader))
+"""
+
+def handler = false
+def jdk9plus = VMPluginFactory.getPlugin().getVersion() > 8
+def macOsRuntimeForJavaPresent = classExists('com.apple.mrj.MRJApplicationUtils')
+        && classExists('com.apple.mrj.MRJQuitHandler')
+        && classExists('com.apple.mrj.MRJAboutHandler')
+        && classExists('com.apple.mrj.MRJPrefsHandler')
+def appleAwtExtensionPresent = classExists('com.apple.eawt.Application')
+        && classExists('com.apple.eawt.QuitHandler')
+        && classExists('com.apple.eawt.AboutHandler')
+        && classExists('com.apple.eawt.PreferencesHandler')
+// TODO Desktop handlers are supposed to work cross platform, should we do version check at a higher layer
+// TODO there is also an open files handler, should we also be using that?
+if (!handler) {
+    try {
+        def scriptSource = jdk9plus ? JDK9PLUS_SCRIPT :
+                macOsRuntimeForJavaPresent ? MRJ_SCRIPT :
+                appleAwtExtensionPresent ? EAWT_SCRIPT :
+                null
+        if (scriptSource) {
+            handler = build(scriptSource, new GroovyClassLoader(this.class.classLoader))
         } else {
             build(BasicMenuBar)
             return
