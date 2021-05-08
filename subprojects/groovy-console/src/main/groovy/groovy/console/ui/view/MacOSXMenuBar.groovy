@@ -104,7 +104,6 @@ MRJApplicationUtils.registerPrefsHandler(handler)
 return handler
 """
 
-def handler = false
 def jdk9plus = VMPluginFactory.getPlugin().getVersion() > 8
 def macOsRuntimeForJavaPresent = classExists('com.apple.mrj.MRJApplicationUtils')
         && classExists('com.apple.mrj.MRJQuitHandler')
@@ -116,26 +115,26 @@ def appleAwtExtensionPresent = classExists('com.apple.eawt.Application')
         && classExists('com.apple.eawt.PreferencesHandler')
 // TODO Desktop handlers are supposed to work cross platform, should we do version check at a higher layer
 // TODO there is also an open files handler, should we also be using that?
-if (!handler) {
-    try {
-        def scriptSource = jdk9plus ? JDK9PLUS_SCRIPT :
-                macOsRuntimeForJavaPresent ? MRJ_SCRIPT :
-                appleAwtExtensionPresent ? EAWT_SCRIPT :
-                null
-        if (scriptSource) {
-            handler = build(scriptSource, new GroovyClassLoader(this.class.classLoader))
-        } else {
-            build(BasicMenuBar)
-            return
+try {
+    def scriptSource = jdk9plus ? JDK9PLUS_SCRIPT :
+            macOsRuntimeForJavaPresent ? MRJ_SCRIPT :
+            appleAwtExtensionPresent ? EAWT_SCRIPT :
+            null
+    if (scriptSource) {
+        if (MacOSXMenuBarHelper.installHandlersOnce()) {
+            build(scriptSource, new GroovyClassLoader(this.class.classLoader))
         }
-    } catch (Exception se) {
-        // usually an AccessControlException, sometimes applets and JNLP won't let
-        // you access MRJ classes.
-        // However, in any exceptional case back out and use the BasicMenuBar
-        se.printStackTrace()
+    } else {
         build(BasicMenuBar)
         return
     }
+} catch (Exception se) {
+    // usually an AccessControlException, sometimes applets and JNLP won't let
+    // you access MRJ classes.
+    // However, in any exceptional case back out and use the BasicMenuBar
+    se.printStackTrace()
+    build(BasicMenuBar)
+    return
 }
 
 menuBar {
@@ -216,11 +215,11 @@ menuBar {
     }
 }
 
-def classExists(String className) {
+static classExists(String className) {
     try {
        Class.forName(className)
         true
-    } catch (ClassNotFoundException cnfe) {
+    } catch (ClassNotFoundException _) {
         false
     }
 }
