@@ -489,11 +489,10 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
 
     void installInterceptor() {
         systemOutInterceptor = new SystemOutputInterceptor(this.&notifySystemOut, true)
-//        systemOutInterceptor.consoleId = this.consoleId
         systemOutInterceptor.start()
         systemErrorInterceptor = new SystemOutputInterceptor(this.&notifySystemErr, false)
-//        systemErrorInterceptor.consoleId = this.consoleId
         systemErrorInterceptor.start()
+        // TODO: would this be a good place to assign the console id?
     }
 
     void addToHistory(record) {
@@ -547,6 +546,8 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
     }
 
     void appendStacktrace(text) {
+        // prevent NPE when outputArea is missing, i.e. there is currently no window present
+        // TODO the text should not be swallowed (options: postpone output, open new window, log file, terminal, ...)
         if (outputArea == null) {
             return
         }
@@ -830,6 +831,11 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
         swing.controller = consoleController
         swing.build(ConsoleActions)
         swing.build(ConsoleView)
+        // TODO The call to installInterceptor() conveys that the interceptors are installed for the new window,
+        //      but this seems not to be the case. Instead the method creates new interceptors for the current window.
+        //      The new window inherited the interceptors from this window a few statements above.
+        //      Actually - since System.out and System.err exists only once - there should be only one interceptor
+        //      forwarding to potentially more than one window.
         installInterceptor()
         nativeFullScreenForMac(swing.consoleFrame)
         swing.consoleFrame.pack()
@@ -1359,7 +1365,7 @@ class Console implements CaretListener, HyperlinkListener, ComponentListener, Fo
         runThread = Thread.start {
             try {
                 systemOutInterceptor.setConsoleId(this.getConsoleId())
-//                systemErrorInterceptor.setConsoleId(this.getConsoleId())
+                // TODO should systemErrorInterceptor receive the console id, too?
                 SwingUtilities.invokeLater { showExecutingMessage() }
                 if (beforeExecution) {
                     beforeExecution()

@@ -20,12 +20,20 @@ package groovy.console.ui.view;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Allow to install menu event handlers only once.<br /><br />
+ * (Add static state to MacOSXMenuBar.groovy, which is not directly possible in script files.)
+ */
 public final class MacOSXMenuBarHelper {
 
     private MacOSXMenuBarHelper() {}
 
     private static final AtomicBoolean handlersInstalled = new AtomicBoolean(false);
 
+    /**
+     * Test, if the menu handlers have been already installed.
+     * @return false when this method is called the first time, true on subsequent calls.
+     */
     public static boolean installHandlersOnce() {
         return !handlersInstalled.get()
                 && MacOSXMenuBarHelper.handlersInstalled.compareAndSet(false, true);

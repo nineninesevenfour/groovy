@@ -20,6 +20,7 @@ package groovy.console.ui.view
 
 import org.codehaus.groovy.vmplugin.VMPluginFactory
 
+// install handlers for JDK9+
 final String JDK9PLUS_SCRIPT = """
 import java.awt.Desktop
 def handler = Desktop.getDesktop()
@@ -29,6 +30,41 @@ handler.setPreferencesHandler(controller.&preferences)
 handler
 """
 
+// install handlers for JDK <= 8, if the "macOS Runtime Support for Java" (MRJ) is present
+final String MRJ_SCRIPT = """
+package groovy.console.ui
+
+import com.apple.mrj.*
+
+class ConsoleMacOsSupport implements MRJQuitHandler, MRJAboutHandler, MRJPrefsHandler {
+
+    def quitHandler
+    def aboutHandler
+    def prefHandler
+
+    public void handleAbout() {
+        aboutHandler()
+    }
+
+    public void handleQuit() {
+        quitHandler()
+    }
+
+
+    public void handlePrefs() throws IllegalStateException {
+        prefHandler()
+    }
+}
+
+def handler = new ConsoleMacOsSupport(quitHandler:controller.&exit, aboutHandler:controller.&showAbout, prefHandler:controller.&preferences)
+MRJApplicationUtils.registerAboutHandler(handler)
+MRJApplicationUtils.registerQuitHandler(handler)
+MRJApplicationUtils.registerPrefsHandler(handler)
+
+return handler
+"""
+
+// install handlers for JDK <= 8, if the "Apple AWT Extension" (EAWT) is present
 final String EAWT_SCRIPT = """
 package groovy.console.ui
 
@@ -71,44 +107,13 @@ application.setPreferencesHandler(handler)
 return handler
 """
 
-final String MRJ_SCRIPT = """
-package groovy.console.ui
-
-import com.apple.mrj.*
-
-class ConsoleMacOsSupport implements MRJQuitHandler, MRJAboutHandler, MRJPrefsHandler {
-
-    def quitHandler
-    def aboutHandler
-    def prefHandler
-
-    public void handleAbout() {
-        aboutHandler()
-    }
-
-    public void handleQuit() {
-        quitHandler()
-    }
-
-
-    public void handlePrefs() throws IllegalStateException {
-        prefHandler()
-    }
-}
-
-def handler = new ConsoleMacOsSupport(quitHandler:controller.&exit, aboutHandler:controller.&showAbout, prefHandler:controller.&preferences)
-MRJApplicationUtils.registerAboutHandler(handler)
-MRJApplicationUtils.registerQuitHandler(handler)
-MRJApplicationUtils.registerPrefsHandler(handler)
-
-return handler
-"""
-
 def jdk9plus = VMPluginFactory.getPlugin().getVersion() > 8
+// JDK <= 8 only
 def macOsRuntimeForJavaPresent = classExists('com.apple.mrj.MRJApplicationUtils')
         && classExists('com.apple.mrj.MRJQuitHandler')
         && classExists('com.apple.mrj.MRJAboutHandler')
         && classExists('com.apple.mrj.MRJPrefsHandler')
+// JDK <= 8 only
 def appleAwtExtensionPresent = classExists('com.apple.eawt.Application')
         && classExists('com.apple.eawt.QuitHandler')
         && classExists('com.apple.eawt.AboutHandler')
@@ -116,6 +121,7 @@ def appleAwtExtensionPresent = classExists('com.apple.eawt.Application')
 // TODO Desktop handlers are supposed to work cross platform, should we do version check at a higher layer
 // TODO there is also an open files handler, should we also be using that?
 try {
+    // select handler version
     def scriptSource = jdk9plus ? JDK9PLUS_SCRIPT :
             macOsRuntimeForJavaPresent ? MRJ_SCRIPT :
             appleAwtExtensionPresent ? EAWT_SCRIPT :
