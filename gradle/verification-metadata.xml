@@ -164,6 +164,8 @@
          </trusted-key>
          <trusted-key id="cdcaa216b086a7b603b638c5145d819475314d97" group="org.json" name="json" version="20200518"/>
          <trusted-key id="ce8075a251547bee249bc151a2115ae15f6b8b72">
+            <!-- version 1.11 of commons-compress is a transitive dependency of log4j 1.2.17 -->
+            <trusting group="org.apache.commons" name="commons-compress" version="1.11"/>
             <trusting group="org.apache.commons" name="commons-compress" version="1.19"/>
             <trusting group="org.apache.ant"/>
             <trusting group="xmlunit"/>
@@ -685,6 +687,12 @@
       <component group="org.apache.bcel" name="bcel" version="6.5.0">
          <artifact name="bcel-6.5.0.jar">
             <pgp value="2db4f1ef0fa761ecc4ea935c86fdc7e2a11262cb"/>
+         </artifact>
+      </component>
+      <!-- version 1.11 of commons-compress is a transitive dependency of log4j 1.2.17 -->
+      <component group="org.apache.commons" name="commons-compress" version="1.11">
+         <artifact name="commons-compress-1.11.jar">
+            <pgp value="ce8075a251547bee249bc151a2115ae15f6b8b72"/>
          </artifact>
       </component>
       <component group="org.apache.commons" name="commons-compress" version="1.19">
