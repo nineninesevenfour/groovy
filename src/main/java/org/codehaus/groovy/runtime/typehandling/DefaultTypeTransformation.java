@@ -398,6 +398,8 @@ public class DefaultTypeTransformation {
                         // as the caller has more context to be able to throw a more
                         // meaningful exception (but stash to get message later)
                         nested = e;
+                        // keep the original exception as suppressed exception to allow easier failure analysis
+                        e.addSuppressed(ex);
                     }
                 } else {
                     nested = e;
