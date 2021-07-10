@@ -31,8 +31,6 @@ final class Groovy7867 {
     void testIntendedBehaviour() {
         // coerce calling constructor with two integers by throwing an Exception
         assertScript '''
-            package groovy.bugs.groovy7867
-            
             class SingletonList extends Vector {
                 SingletonList(Collection c) {
                     super(c)
@@ -53,8 +51,6 @@ final class Groovy7867 {
     void testRetrievingSuppressedException() {
         // for easier failure analysis it can be crucial to get hold of the original exception
         assertScript '''
-            package groovy.bugs.groovy7867
-            
             import org.codehaus.groovy.runtime.typehandling.GroovyCastException
             
             class SingletonList extends Vector {
@@ -96,8 +92,6 @@ final class Groovy7867 {
     void testFallbackToNoArgsConstructor() {
         // the no-arg constructor is the second fallback which comes before calling the constructor with two integers
         assertScript '''
-            package groovy.bugs.groovy7867
-            
             class SingletonList extends Vector {
                 SingletonList() {
                     super()

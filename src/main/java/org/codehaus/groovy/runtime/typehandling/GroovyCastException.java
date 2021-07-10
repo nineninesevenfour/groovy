@@ -30,10 +30,6 @@ public class GroovyCastException extends ClassCastException {
     public GroovyCastException(Object objectToCast, Class classToCastTo, Exception cause) {
         super(makeMessage(objectToCast,classToCastTo) + " due to: " +
                 cause.getClass().getName() + (cause.getMessage() == null ? "" : ": " + cause.getMessage()));
-        // inherit suppressed exceptions from cause
-        for (Throwable suppressed : cause.getSuppressed()) {
-            addSuppressed(suppressed);
-        }
     }
 
     /**

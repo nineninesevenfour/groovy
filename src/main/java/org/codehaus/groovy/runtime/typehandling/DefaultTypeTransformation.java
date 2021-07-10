@@ -382,6 +382,7 @@ public class DefaultTypeTransformation {
         }
 
         Exception nested = null;
+        Exception suppressed = null;
         if (args != null) {
             try {
                 return InvokerHelper.invokeConstructorOf(type, args);
@@ -399,7 +400,7 @@ public class DefaultTypeTransformation {
                         // meaningful exception (but stash to get message later)
                         nested = e;
                         // keep the original exception as suppressed exception to allow easier failure analysis
-                        e.addSuppressed(ex);
+                        suppressed = ex;
                     }
                 } else {
                     nested = e;
@@ -417,6 +418,9 @@ public class DefaultTypeTransformation {
             gce = new GroovyCastException(object, type, nested);
         } else {
             gce = new GroovyCastException(object, type);
+        }
+        if (suppressed != null) {
+            gce.addSuppressed(suppressed);
         }
         throw gce;
     }
